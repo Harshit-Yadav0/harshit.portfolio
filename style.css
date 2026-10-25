@@ -64,7 +64,8 @@ nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .toast.show { transform: translate(-50%, 0); opacity: 1; }
 
 /* ---------- Project cards (in world space) ---------- */
-.slot { position: absolute; width: 300px; transform: translate(-50%, -50%); pointer-events: none; }
+.slot { position: absolute; width: 300px; transform: translate(-50%, -50%); pointer-events: none; visibility: hidden; contain: layout style; }
+.slot.show { visibility: visible; }
 .card {
   --c: hsl(var(--h) 92% 58%);
   position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
@@ -118,10 +119,46 @@ nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .pad button.go { background: var(--accent); color: #190700; }
 .pad button:active { transform: scale(.94); filter: brightness(1.3); }
 
+/* ---------- effects ---------- */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 4; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .55) 100%);
+}
+.top { animation: dropin .8s cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes dropin { from { transform: translateY(-30px); opacity: 0; } }
+.card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .25) 48%, transparent 66%);
+  transform: translateX(-130%);
+}
+.slot.show .card::after { animation: shine 1.2s .6s ease-out 1 forwards; }
+@keyframes shine { to { transform: translateX(130%); } }
+.slot.show .body > * { animation: rise .6s cubic-bezier(.2, .9, .3, 1) both; }
+.slot.show .body > :nth-child(1) { animation-delay: .35s; }
+.slot.show .body > :nth-child(2) { animation-delay: .45s; }
+.slot.show .body > :nth-child(3) { animation-delay: .55s; }
+.slot.show .body > :nth-child(4) { animation-delay: .65s; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+.slot.show .media .num { animation: pop .9s .3s cubic-bezier(.18, 1.5, .35, 1) both; }
+@keyframes pop { from { transform: scale(.3) translateY(30px); opacity: 0; } }
+.slot.show .card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .6), 0 0 60px -6px var(--c);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.score {
+  left: 50%; top: 78px; transform: translateX(-50%); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-weight: 700; letter-spacing: .06em; text-shadow: 0 2px 12px rgba(0, 0, 0, .7);
+}
+#drift { font-size: clamp(22px, 4vw, 34px); color: var(--gold); font-style: italic; min-height: 1.2em; }
+#total { font-size: 14px; color: var(--muted); }
+
 @media (max-width: 640px) {
   .brand p { display: none; }
   .pill { padding: 7px 11px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .top, .slot.show .body > *, .slot.show .media .num, .slot.show .card::after { animation: none; }
   .slot.show .card { transition: opacity .2s; }
 }
