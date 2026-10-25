@@ -1,0 +1,17 @@
+{
+  "profile": {
+    "name": "Your Name",
+    "tagline": "Developer. I build fast things and drift into corners.",
+    "github": "",
+    "linkedin": "",
+    "email": ""
+  },
+  "projects": [
+    { "id": "p1", "title": "Neon Notes", "description": "Sample project: a realtime collaborative notes app with offline sync. Replace me from the admin portal.", "tags": ["React", "Node", "WebSockets"], "link": "#", "repo": "", "image": "" },
+    { "id": "p2", "title": "Pit Stop Dashboard", "description": "Sample project: analytics dashboard that turns raw logs into live charts.", "tags": ["TypeScript", "D3"], "link": "#", "repo": "", "image": "" },
+    { "id": "p3", "title": "Apex Weather", "description": "Sample project: a minimalist weather PWA with radar and hourly forecast.", "tags": ["PWA", "API"], "link": "#", "repo": "", "image": "" },
+    { "id": "p4", "title": "Gearbox UI", "description": "Sample project: an accessible, themeable component library.", "tags": ["CSS", "Storybook"], "link": "#", "repo": "", "image": "" },
+    { "id": "p5", "title": "Lap Timer", "description": "Sample project: mobile-first stopwatch for track days with GPS splits.", "tags": ["JavaScript", "GPS"], "link": "#", "repo": "", "image": "" },
+    { "id": "p6", "title": "Drift API", "description": "Sample project: a rate-limited REST API with auth and docs.", "tags": ["Node", "PostgreSQL"], "link": "#", "repo": "", "image": "" }
+  ]
+}
