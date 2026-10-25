@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin · Drift Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <!-- Login / first-time setup -->
+  <main id="login" class="login hidden">
+    <form id="loginForm" class="box">
+      <h1 id="loginTitle">Admin login</h1>
+      <p id="loginHelp" class="muted"></p>
+      <label>Password <input id="pw" type="password" autocomplete="current-password" required minlength="6"></label>
+      <label id="pw2wrap" class="hidden">Confirm password <input id="pw2" type="password" autocomplete="new-password" minlength="6"></label>
+      <p id="loginErr" class="err"></p>
+      <button class="btn primary" type="submit">Continue</button>
+      <a class="btn ghost" href="index.html">&larr; Back to site</a>
+    </form>
+  </main>
+
+  <!-- Dashboard -->
+  <div id="app" class="hidden">
+    <header class="bar">
+      <h1>Admin portal</h1>
+      <div class="actions">
+        <a class="btn ghost" href="index.html" target="_blank">View site &#8599;</a>
+        <button class="btn" id="btnExport">Export JSON</button>
+        <label class="btn">Import JSON<input id="importFile" type="file" accept="application/json,.json" hidden></label>
+        <button class="btn ghost" id="btnLogout">Log out</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="box">
+        <h2 id="formTitle">Add project</h2>
+        <form id="pForm">
+          <label>Title <input id="fTitle" required maxlength="80" placeholder="Neon Notes"></label>
+          <label>Description <textarea id="fDesc" rows="4" maxlength="400" placeholder="What is it, what did you build, what's the impact?"></textarea></label>
+          <label>Tags (comma separated) <input id="fTags" placeholder="React, Node, PostgreSQL"></label>
+          <label>Live link <input id="fLink" placeholder="https://myproject.com"></label>
+          <label>Code / repo link <input id="fRepo" placeholder="https://github.com/me/project"></label>
+          <label>Image URL <input id="fImg" placeholder="https://… (or upload below)"></label>
+          <div class="row">
+            <label class="btn">Upload image<input id="fFile" type="file" accept="image/*" hidden></label>
+            <button type="button" class="btn ghost" id="btnClearImg">Remove image</button>
+          </div>
+          <div id="imgPrev" class="imgprev hidden"></div>
+          <div class="row">
+            <button class="btn primary" type="submit" id="btnSave">Add project</button>
+            <button class="btn ghost hidden" type="button" id="btnCancel">Cancel edit</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="box">
+        <h2>Projects <span id="pcount" class="muted"></span></h2>
+        <p class="muted small">Order = order of corners on the track. First one is unlocked first.</p>
+        <ul id="list" class="list"></ul>
+      </section>
+
+      <section class="box">
+        <h2>Profile</h2>
+        <form id="profForm">
+          <label>Name <input id="pName"></label>
+          <label>Tagline <input id="pTag"></label>
+          <label>GitHub <input id="pGh" placeholder="https://github.com/you"></label>
+          <label>LinkedIn <input id="pLi" placeholder="https://linkedin.com/in/you"></label>
+          <label>Email <input id="pEm" type="email"></label>
+          <button class="btn primary" type="submit">Save profile</button>
+        </form>
+      </section>
+
+      <section class="box">
+        <h2>Security &amp; data</h2>
+        <form id="pwForm" class="row">
+          <input id="newPw" type="password" placeholder="New password (6+ chars)" minlength="6" autocomplete="new-password">
+          <button class="btn" type="submit">Change password</button>
+        </form>
+        <p class="muted small">Heads up: this login only protects the admin page in <b>this browser</b>. Your projects are stored in this browser's localStorage. To publish them to everyone, click <b>Export JSON</b> and upload the file as <code>projects.json</code> next to <code>index.html</code>.</p>
+        <button class="btn danger" id="btnReset">Reset to sample data</button>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="store.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
