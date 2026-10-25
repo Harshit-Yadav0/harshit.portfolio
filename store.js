@@ -1,7 +1,8 @@
-/* Shared data layr. Data lives on the server (/api/data) so every visitor sees what the admin saved. */
+/* Shared data layer. Data lives on the server (/api/data) so every visitor sees what the admin saved. */
 (function (root) {
   'use strict';
   const TOKEN_KEY = 'drift_admin_token';
+  const LOCAL_DATA_KEY = 'drift_portfolio_data';
 
   const DEFAULTS = {
     profile: { name: 'Your Name', tagline: 'Developer. I build fast things and drift into corners.', github: '', linkedin: '', email: '' },
@@ -40,6 +41,13 @@
       if (r.ok) { Store.online = true; return normalize(await r.json()); }
     } catch (e) { /* no server */ }
     try {
+      const local = localStorage.getItem(LOCAL_DATA_KEY);
+      if (local) {
+        const d = JSON.parse(local);
+        if (d && Array.isArray(d.projects)) return normalize(d);
+      }
+    } catch (e) { /* ignore */ }
+    try {
       const r = await fetch('projects.json', { cache: 'no-store' });
       if (r.ok) { const d = await r.json(); if (d && Array.isArray(d.projects)) return normalize(d); }
     } catch (e) { /* ignore */ }
@@ -61,7 +69,10 @@
 
   Store.login = async function (password) {
     const r = await call('POST', '/api/login', { password: password });
-    if (r.ok && r.data.token) { sessionStorage.setItem(TOKEN_KEY, r.data.token); return { ok: true }; }
+    if (r.ok && r.data.token) {
+      try { sessionStorage.setItem(TOKEN_KEY, r.data.token); } catch (e) { /* ignore */ }
+      return { ok: true };
+    }
     return { ok: false, error: r.data.error || 'Login failed' };
   };
   Store.check = async function () { if (!Store.token()) return false; try { return (await call('GET', '/api/me')).ok; } catch (e) { return false; } };
