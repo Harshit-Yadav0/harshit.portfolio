@@ -1,5 +1,3 @@
-/* Zero-dependency server: serves the site, public data API, admin login, image uploads.
-   Run:  ADMIN_PASSWORD=yourpass node server.js        (Node 18+) */
 'use strict';
 const http = require('http');
 const fs = require('fs');
@@ -20,7 +18,7 @@ if (!fs.existsSync(DATA_FILE)) {
     fs.copyFileSync(seedFile, DATA_FILE);
   } else {
     fs.writeFileSync(DATA_FILE, JSON.stringify({
-      profile: { name: 'Your Name', tagline: 'Developer. I build fast things and drift into corners.', github: '', linkedin: '', email: '' },
+      profile: { name: 'Harshit Yadav', tagline: 'Developer. I build fast things and drift into corners.', github: '', linkedin: '', email: '' },
       projects: []
     }, null, 2));
   }
@@ -38,8 +36,8 @@ if (!ADMIN_PW) {
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 const pwOk = (p) => crypto.timingSafeEqual(sha(p), sha(ADMIN_PW));
 
-const tokens = new Map();           // token -> expiry ms
-const attempts = new Map();         // ip -> {n, reset}
+const tokens = new Map();
+const attempts = new Map();
 const TOKEN_TTL = 12 * 3600 * 1000;
 
 const STATIC = {
@@ -77,7 +75,6 @@ function authed(req) {
 }
 function clientIp(req) { return String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim(); }
 
-/* ---- data validation ---- */
 const str = (v, max) => String(v == null ? '' : v).slice(0, max);
 const cleanUrl = (u) => { u = str(u, 500).trim(); return !u || /^(https?:|mailto:|\/|\.|#)/i.test(u) ? u : 'https://' + u; };
 const cleanImg = (u) => {
@@ -108,7 +105,6 @@ function cleanupUploads(data) {
   }
 }
 
-/* ---- routes ---- */
 async function api(req, res, url) {
   if (url === '/api/data' && req.method === 'GET') {
     return send(res, 200, fs.readFileSync(DATA_FILE), { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store' });
@@ -155,4 +151,17 @@ const server = http.createServer(async (req, res) => {
     if (req.method !== 'GET' && !isHead) return send(res, 405, 'Method not allowed');
     if (url.startsWith('/uploads/')) {
       const name = path.basename(url);
-      const fp = path
+      const fp = path.join(UPLOADS, name);
+      if (!/^[\w.-]+$/.test(name) || !fs.existsSync(fp)) return send(res, 404, 'Not found', null, isHead);
+      return send(res, 200, fs.readFileSync(fp), { 'Content-Type': MIME[path.extname(name)] || 'application/octet-stream', 'Cache-Control': 'public, max-age=31536000, immutable' }, isHead);
+    }
+    const file = STATIC[url];
+    const fullPath = file ? path.join(ROOT, file) : '';
+    if (!file || !fs.existsSync(fullPath)) return send(res, 404, 'Not found', null, isHead);
+    send(res, 200, fs.readFileSync(fullPath), { 'Content-Type': MIME[path.extname(file)], 'Cache-Control': 'no-cache' }, isHead);
+  } catch (e) {
+    console.error(e);
+    if (!res.headersSent) send(res, 500, 'Server error');
+  }
+});
+server.listen(PORT, () => console.log('Portfolio running on http://localhost:' + PORT + '  (admin: /admin)'));
