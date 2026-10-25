@@ -24,6 +24,24 @@
   }
   const hue = function (i) { return (18 + i * 53) % 360; };
 
+  /* Ensure optional HUD elements exist so missing HTML tags never crash the game */
+  const navEl = document.querySelector('header.hud nav');
+  if (navEl && !$('btnSound')) {
+    const sb = document.createElement('button');
+    sb.id = 'btnSound';
+    sb.className = 'pill ghost';
+    sb.type = 'button';
+    sb.textContent = 'Sound: off';
+    navEl.insertBefore(sb, navEl.lastElementChild);
+  }
+  if (!$('score')) {
+    const sc = document.createElement('div');
+    sc.id = 'score';
+    sc.className = 'hud score hidden';
+    sc.innerHTML = '<div id="drift"></div><div id="total">SCORE 0</div>';
+    document.body.appendChild(sc);
+  }
+
   /* ---------- header ---------- */
   document.title = profile.name + ' · Portfolio';
   $('name').textContent = profile.name;
@@ -76,6 +94,7 @@
   });
 
   // scenery
+  let bounds;
   const trees = (function () {
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
     for (let i = 0; i < n; i++) { minX = Math.min(minX, TX[i]); maxX = Math.max(maxX, TX[i]); minY = Math.min(minY, TY[i]); maxY = Math.max(maxY, TY[i]); }
@@ -99,7 +118,6 @@
     }
     return out;
   })();
-  var bounds;
 
   /* ---------- cards ---------- */
   const slotEls = [], revealed = projects.map(function () { return false; });
@@ -128,7 +146,7 @@
   /* ---------- side panel ---------- */
   const plist = $('plist'), panel = $('panel');
   plist.innerHTML = projects.length ? projects.map(function (p, i) {
-    return '<li class="card" style="--h:' + hue(i) + '">' + mediaHTML(p, i) + '<div class="body"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description) + '</p>' + tagsHTML(p) + '<div class="links">' + linksHTML(p) + '<button class="alt" data-locate="' + i + '">Locate</button></div></div></li>';
+    return '<li class="card" style="--h:' + hue(i) + '">' + mediaHTML(p, i) + '<div class="body"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description) + '</p>' + tagsHTML(p) + '<div class="links">' + linksHTML(p) + '<button type="button" class="alt" data-locate="' + i + '">Locate</button></div></div></li>';
   }).join('') : '<li class="empty">No projects yet. Add some in the admin portal.</li>';
   plist.addEventListener('click', function (e) {
     const b = e.target.closest('[data-locate]');
@@ -262,7 +280,7 @@
       man.x = car.x; man.y = car.y; man.h = car.h; man.vx = car.vx; man.vy = car.vy;
       mode = 'manual';
       $('btnDrive').textContent = 'Autopilot';
-      $('score').classList.remove('hidden');
+      if ($('score')) $('score').classList.remove('hidden');
       if (matchMedia('(pointer: coarse)').matches) $('touch').classList.remove('hidden');
     } else {
       const g = nearest(car.x, car.y);
@@ -272,7 +290,7 @@
       auto.ox = car.x - TX[g.i]; auto.oy = car.y - TY[g.i]; auto.oh = wrap(car.h - TA[g.i]);
       mode = 'auto';
       $('btnDrive').textContent = 'Take the wheel';
-      $('score').classList.add('hidden');
+      if ($('score')) $('score').classList.add('hidden');
       $('touch').classList.add('hidden');
       Object.keys(keys).forEach(function (k) { keys[k] = false; });
     }
@@ -353,11 +371,13 @@
       } catch (e) { /* ignore */ }
     }
   };
-  $('btnSound').addEventListener('click', function () {
-    if (Snd.on) { Snd.stop(); this.textContent = 'Sound: off'; }
-    else if (Snd.start()) this.textContent = 'Sound: on';
-    this.blur();
-  });
+  if ($('btnSound')) {
+    $('btnSound').addEventListener('click', function () {
+      if (Snd.on) { Snd.stop(); this.textContent = 'Sound: off'; }
+      else if (Snd.start()) this.textContent = 'Sound: on';
+      this.blur();
+    });
+  }
 
   /* ---------- reveal ---------- */
   function wheelPos(k) {
@@ -399,7 +419,6 @@
     if (focus && time < focus.until) { tx = focus.x; ty = focus.y; k = 3; }
     cam.x += (tx - cam.x) * Math.min(1, dt * k);
     cam.y += (ty - cam.y) * Math.min(1, dt * k);
-    // constant zoom: changing it every frame forces the browser to re-render all the cards
     const zt = baseZoom();
     cam.z += (zt - cam.z) * Math.min(1, dt * 3);
     if (Math.abs(zt - cam.z) < 0.002) cam.z = zt;
@@ -462,8 +481,8 @@
         if (driftPts > 0 && driftIdle > 0.8) { if (driftPts > 60) { score += Math.round(driftPts); Snd.blip(660); } driftPts = 0; }
       }
       const dTxt = driftPts > 20 ? 'DRIFT +' + Math.round(driftPts) : '';
-      if (dTxt !== lastD) { $('drift').textContent = dTxt; lastD = dTxt; }
-      if (score !== lastS) { $('total').textContent = 'SCORE ' + score; lastS = score; }
+      if (dTxt !== lastD && $('drift')) { $('drift').textContent = dTxt; lastD = dTxt; }
+      if (score !== lastS && $('total')) { $('total').textContent = 'SCORE ' + score; lastS = score; }
     }
     Snd.update(car.speed, car.drift, car.accel);
 
@@ -708,7 +727,7 @@
   /* ---------- go ---------- */
   let last = performance.now();
   function frame(now) {
-    requestAnimationFrame(frame); // schedule first so one error can never freeze the screen
+    requestAnimationFrame(frame);
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
     try {
@@ -716,7 +735,6 @@
       render();
     } catch (err) {
       console.error('frame error', err);
-      // repair any broken numbers so the next frame can recover
       [car, cam, auto, man].forEach(function (o) { for (const k in o) if (typeof o[k] === 'number' && !isFinite(o[k])) o[k] = 0; });
     }
   }
