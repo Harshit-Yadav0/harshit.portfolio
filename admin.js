@@ -14,12 +14,23 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2400);
   }
 
-  /* Save everything to the server. Returns true on success. */
+  /* Save everything to the server (or localStorage if offline). Returns true on success. */
   async function persist(msg) {
+    if (!Store.online) {
+      try {
+        localStorage.setItem('drift_portfolio_data', JSON.stringify(Store.normalize(data)));
+        data = Store.normalize(data);
+        if (msg) toast(msg + ' (saved locally in browser)');
+        return true;
+      } catch (e) {
+        toast('Local save fail hua');
+        return false;
+      }
+    }
     let r;
     try { r = await Store.save(data); } catch (e) { toast('Server se connect nahi hua'); return false; }
     if (r.status === 401) { Store.logout(); toast('Session khatam, dobara login karo'); setTimeout(function () { location.reload(); }, 900); return false; }
-    if (!r.ok) { toast(r.data.error || 'Save fail hua'); return false; }
+    if (!r.ok) { toast((r.data && r.data.error) || 'Save fail hua'); return false; }
     data = Store.normalize(r.data);
     if (msg) toast(msg);
     return true;
@@ -28,14 +39,22 @@
   /* ---------- auth ---------- */
   function showLogin() {
     $('login').classList.remove('hidden'); $('app').classList.add('hidden');
-    if (!Store.online) $('loginErr').textContent = 'Server nahi mila. Pehle terminal me "node server.js" chalao aur localhost:3000/admin kholo.';
+    if (!Store.online) {
+      $('loginErr').textContent = 'Offline mode: Server nahi mila ("node server.js"). Koi bhi password daal kar local edit/backup kar sakte ho.';
+    }
   }
   function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); renderAll(); }
 
   $('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     $('loginErr').textContent = '';
-    if (!Store.online) { showLogin(); return; }
+    if (!Store.online) {
+      // Allow offline access so user can still manage projects & export JSON
+      $('pw').value = '';
+      showApp();
+      toast('Opened in local offline mode');
+      return;
+    }
     const r = await Store.login($('pw').value);
     if (!r.ok) { $('loginErr').textContent = r.error; return; }
     $('pw').value = '';
@@ -51,12 +70,12 @@
     const ul = $('list');
     if (!data.projects.length) { ul.innerHTML = '<li class="muted small">No projects yet. Add your first one on the left.</li>'; return; }
     ul.innerHTML = data.projects.map(function (p, i) {
-      const th = /^(https?:\/\/|\/)/i.test(p.image) ? '<img src="' + esc(p.image) + '" alt="">' : String(i + 1);
+      const th = /^(https?:\/\/|\/|\.|data:image\/)/i.test(p.image) ? '<img src="' + esc(p.image) + '" alt="">' : String(i + 1);
       return '<li class="item" style="--h:' + ((18 + i * 53) % 360) + '"><div class="th">' + th + '</div><div><h3>' + esc(p.title) + '</h3><p>' + esc(p.description) + '</p></div><div class="ctl">' +
-        '<button data-a="up" data-i="' + i + '" title="Move up"' + (i === 0 ? ' disabled' : '') + '>&uarr;</button>' +
-        '<button data-a="down" data-i="' + i + '" title="Move down"' + (i === data.projects.length - 1 ? ' disabled' : '') + '>&darr;</button>' +
-        '<button data-a="edit" data-i="' + i + '" title="Edit">&#9998;</button>' +
-        '<button data-a="del" data-i="' + i + '" title="Delete">&times;</button></div></li>';
+        '<button type="button" data-a="up" data-i="' + i + '" title="Move up"' + (i === 0 ? ' disabled' : '') + '>&uarr;</button>' +
+        '<button type="button" data-a="down" data-i="' + i + '" title="Move down"' + (i === data.projects.length - 1 ? ' disabled' : '') + '>&darr;</button>' +
+        '<button type="button" data-a="edit" data-i="' + i + '" title="Edit">&#9998;</button>' +
+        '<button type="button" data-a="del" data-i="' + i + '" title="Delete">&times;</button></div></li>';
     }).join('');
   }
   function renderProfile() {
@@ -112,11 +131,16 @@
         const c = document.createElement('canvas');
         c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const dataUrl = c.toDataURL('image/jpeg', 0.82);
+        if (!Store.online) {
+          image = dataUrl; $('fImg').value = image; renderPreview(); toast('Image ready (local)');
+          return;
+        }
         toast('Image upload ho rahi hai...');
         let r;
-        try { r = await Store.upload(c.toDataURL('image/jpeg', 0.82)); } catch (e) { toast('Upload fail hua'); return; }
+        try { r = await Store.upload(dataUrl); } catch (e) { toast('Upload fail hua'); return; }
         if (r.status === 401) { toast('Session khatam, dobara login karo'); return; }
-        if (!r.ok) { toast(r.data.error || 'Upload fail hua'); return; }
+        if (!r.ok) { toast((r.data && r.data.error) || 'Upload fail hua'); return; }
         image = r.data.url; $('fImg').value = image; renderPreview(); toast('Image ready');
       };
       img.onerror = function () { toast('Ye image padh nahi paye'); };
@@ -156,7 +180,7 @@
   });
   $('btnExport').addEventListener('click', function () {
     const blob = new Blob([JSON.stringify(Store.normalize(data), null, 2)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'projects-backup.json';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'projects.json';
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
     toast('Backup download ho gaya');
   });
