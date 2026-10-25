@@ -1,4 +1,4 @@
-/* Shared data layer. Data lives on the server (/api/data) so every visitor sees what the admin saved. */
+/* Shared data layr. Data lives on the server (/api/data) so every visitor sees what the admin saved. */
 (function (root) {
   'use strict';
   const TOKEN_KEY = 'drift_admin_token';
